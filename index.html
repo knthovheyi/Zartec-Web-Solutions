@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zartec Solutions - Central Console Super App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS CDN for Excel & CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        zartec: {
+                            red: '#C8102E',
+                            darkred: '#9B0B21',
+                            black: '#111111',
+                            charcoal: '#1E1E1E',
+                            lightbg: '#F8F9FA'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white; color: black; font-size: 11pt; }
+            .page-break { page-break-before: always; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body class="bg-zartec-lightbg text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- LOGIN MODAL / OVERLAY -->
+    <div id="login-modal" class="fixed inset-0 bg-zartec-black/90 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl border-2 border-zartec-red max-w-md w-full overflow-hidden">
+            <div class="bg-zartec-black p-6 text-center text-white border-b-4 border-zartec-red relative">
+                <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+                <div class="bg-white p-2 rounded-full border-2 border-zartec-red shadow-md w-16 h-16 mx-auto mb-3 flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 200 200" class="w-full h-full">
+                        <circle cx="100" cy="100" r="95" fill="white" stroke="#111" stroke-width="6"/>
+                        <circle cx="100" cy="100" r="88" fill="none" stroke="#C8102E" stroke-width="3"/>
+                        <path d="M70 120 h60 v-20 h-60 z" fill="#C8102E"/>
+                        <rect x="92" y="125" width="16" height="15" fill="#C8102E"/>
+                        <rect x="75" y="140" width="50" height="6" fill="#C8102E"/>
+                        <circle cx="70" cy="70" r="10" fill="#C8102E"/><line x1="70" y1="80" x2="70" y2="100" stroke="#C8102E" stroke-width="4"/>
+                        <circle cx="100" cy="50" r="10" fill="#C8102E"/><line x1="100" y1="60" x2="100" y2="100" stroke="#C8102E" stroke-width="4"/>
+                        <circle cx="130" cy="70" r="10" fill="#C8102E"/><line x1="130" y1="80" x2="130" y2="100" stroke="#C8102E" stroke-width="4"/>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-black uppercase tracking-wider">ZARTEC <span class="text-zartec-red">SOLUTIONS</span></h2>
+                <p class="text-xs text-slate-400 mt-1">Central Console Internal Authentication</p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="p-6 space-y-4 text-xs">
+                <div id="login-error" class="hidden bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg font-bold text-center">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Invalid username or password!
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Username</label>
+                    <input type="text" id="login-username" placeholder="e.g. zartec_admin or zartec_sales" required class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm font-semibold">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required class="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm font-semibold">
+                </div>
+                <button type="submit" class="w-full bg-zartec-red hover:bg-zartec-darkred text-white font-bold py-3 rounded-xl shadow-lg transition uppercase tracking-wider text-xs">
+                    Log In to Console Desk
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN HEADER NAVIGATION -->
+    <header class="bg-zartec-black text-white shadow-xl border-b-4 border-zartec-red sticky top-0 z-40 no-print">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex flex-wrap justify-between items-center gap-4">
+            
+            <!-- BRAND LOGO -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchModule('customer')">
+                <div class="bg-white p-1 rounded-full border-2 border-zartec-red shadow-md w-11 h-11 flex items-center justify-center overflow-hidden">
+                    <svg viewBox="0 0 200 200" class="w-full h-full">
+                        <circle cx="100" cy="100" r="95" fill="white" stroke="#111" stroke-width="6"/>
+                        <circle cx="100" cy="100" r="88" fill="none" stroke="#C8102E" stroke-width="3"/>
+                        <path d="M70 120 h60 v-20 h-60 z" fill="#C8102E"/>
+                        <rect x="92" y="125" width="16" height="15" fill="#C8102E"/>
+                        <rect x="75" y="140" width="50" height="6" fill="#C8102E"/>
+                        <circle cx="70" cy="70" r="10" fill="#C8102E"/><line x1="70" y1="80" x2="70" y2="100" stroke="#C8102E" stroke-width="4"/>
+                        <circle cx="100" cy="50" r="10" fill="#C8102E"/><line x1="100" y1="60" x2="100" y2="100" stroke="#C8102E" stroke-width="4"/>
+                        <circle cx="130" cy="70" r="10" fill="#C8102E"/><line x1="130" y1="80" x2="130" y2="100" stroke="#C8102E" stroke-width="4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-black tracking-wider uppercase text-white">ZARTEC <span class="text-zartec-red">SOLUTIONS</span></h1>
+                    <p class="text-[10px] text-slate-400">Central Digital Console & Super App Platform</p>
+                </div>
+            </div>
+
+            <!-- CENTRAL CONSOLE MODULE TABS -->
+            <nav class="flex items-center space-x-1 text-xs font-bold flex-wrap">
+                <button id="nav-customer-btn" onclick="switchModule('customer')" class="bg-zartec-red text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                    <i class="fa-solid fa-users"></i> Customer Desk
+                </button>
+                <button id="nav-assessor-btn" onclick="switchModule('assessor')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-laptop-code text-zartec-red"></i> DeviceFit™
+                </button>
+                <button id="nav-cyber-btn" onclick="switchModule('cyber')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-shield-virus text-zartec-red"></i> Cyber Health
+                </button>
+                <button id="nav-dr-btn" onclick="switchModule('dr')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-server text-zartec-red"></i> Veeam DR
+                </button>
+                <button id="nav-fleet-btn" onclick="switchModule('fleet')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-chart-line text-zartec-red"></i> Fleet Planner
+                </button>
+                <button id="nav-vault-btn" onclick="switchModule('vault')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-box-archive text-zartec-red"></i> Asset Vault
+                </button>
+                <button id="nav-monitor-btn" onclick="switchModule('monitor')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-globe text-zartec-red"></i> Trust Monitor
+                </button>
+                <button id="nav-admin-btn" onclick="switchModule('admin')" class="bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1">
+                    <i class="fa-solid fa-database text-zartec-red"></i> Admin Desk[cite: 1]
+                </button>
+
+                <div class="border-l border-slate-700 pl-2 ml-1">
+                    <button id="auth-state-btn" onclick="openLoginModal()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 border border-slate-600">
+                        <i class="fa-solid fa-right-to-bracket text-zartec-red"></i> Staff Login
+                    </button>
+                </div>
+            </nav>
+
+        </div>
+    </header>
+
+    <!-- STATUS BANNER -->
+    <div class="max-w-7xl mx-auto px-6 pt-4 w-full no-print">
+        <div class="p-3.5 bg-white border-l-4 border-zartec-red rounded-r-xl shadow-sm flex flex-wrap justify-between items-center text-xs gap-3">
+            <div class="flex items-center space-x-3">
+                <span id="role-badge" class="bg-zartec-red text-white px-2.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Customer Self-Service Mode</span>
+                <span class="text-slate-600">Central Hub: Live Catalog • DeviceFit™ Engine • 5 Paid Digital Modules • Bobgo Delivery • Service Centre[cite: 1]</span>
+            </div>
+            <div class="flex items-center space-x-4 text-slate-500">
+                <span>Desk: <strong class="text-slate-900">087 265 4829</strong></span>
+                <span>WhatsApp: <strong class="text-slate-900">077 255 9155</strong></span>
+                <span>Email: <strong class="text-slate-900">information@zartec.co.za</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONSOLE CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-6 py-6 no-print space-y-6">
+
+        <!-- MODULE 0: CUSTOMER SELF-SERVICE DESK -->
+        <div id="module-customer" class="space-y-6">
+            <div class="bg-zartec-black text-white p-6 rounded-2xl border-l-8 border-zartec-red shadow-lg flex flex-wrap justify-between items-center gap-4">
+                <div class="max-w-xl">
+                    <span class="bg-zartec-red text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full inline-block mb-2">The R100 Tech Insurance</span>
+                    <h2 class="text-xl font-black uppercase tracking-wide leading-snug">Get Your Customized DeviceFit™ Hardware Match</h2>
+                    <p class="text-xs text-slate-300 mt-1">Don't guess on an expensive laptop. Get an engineering recommendation for R100. <strong>100% credited back to your invoice when you order!</strong>[cite: 1]</p>
+                </div>
+                <div class="text-right bg-white/10 p-4 rounded-xl border border-white/10">
+                    <span class="text-2xl font-black text-zartec-red block">R 100.00</span>
+                    <span class="text-[10px] text-slate-300 block">Refundable Deposit</span>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 border-b border-slate-200 pb-2 text-xs font-bold">
+                <button onclick="switchCustSub('fit')" id="csub-fit-btn" class="bg-zartec-red text-white px-4 py-2 rounded-lg">DeviceFit™ Assessment</button>
+                <button onclick="switchCustSub('track')" id="csub-track-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg">Track Bobgo Delivery[cite: 1]</button>
+                <button onclick="switchCustSub('repair')" id="csub-repair-btn" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg">Service Centre Repair Job[cite: 1]</button>
+            </div>
+
+            <!-- CUST SUB 1: R100 ASSESSMENT FORM -->
+            <div id="ctab-fit" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 text-xs">
+                <h3 class="text-base font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-sliders text-zartec-red mr-2"></i> Workload Requirements Submission</h3>
+                <form id="cust-fit-form" onsubmit="submitCustAssessment(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase mb-1">Your Full Name / Company</label>
+                            <input type="text" id="cname" required placeholder="e.g. Tendani Musina" class="w-full border rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-zartec-red">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase mb-1">WhatsApp Phone Number</label>
+                            <input type="tel" id="cphone" required placeholder="e.g. 077 255 9155" class="w-full border rounded-lg p-2.5 text-sm font-semibold focus:ring-2 focus:ring-zartec-red">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase mb-1">Usage Profile</label>
+                            <select id="crole" class="w-full border rounded-lg p-2.5 text-sm font-semibold">
+                                <option value="Executive Management">Executive Management</option>
+                                <option value="Road Warrior / Field Staff">Road Warrior / Field Staff (Durable, 4G)</option>
+                                <option value="Engineering & CAD">Engineering, CAD & Video Rendering</option>
+                                <option value="Standard Office & Admin" selected>Standard Office & Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase mb-1">Target Budget Range</label>
+                            <select id="cbudget" class="w-full border rounded-lg p-2.5 text-sm font-semibold">
+                                <option value="Under R12,000">Under R 12,000</option>
+                                <option value="R12,000 - R20,000" selected>R 12,000 - R 20,000</option>
+                                <option value="R20,000 - R35,000">R 20,000 - R 35,000</option>
+                                <option value="R35,000+">R 35,000+</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-zartec-red hover:bg-zartec-darkred text-white font-bold py-3 rounded-xl shadow transition uppercase tracking-wider text-xs">
+                        Submit R100 Assessment Request
+                    </button>
+                </form>
+                <div id="cust-success-box" class="hidden bg-emerald-50 border border-emerald-300 p-4 rounded-xl text-center space-y-2">
+                    <p class="font-bold text-emerald-900 text-sm">Request Received! Thank you, <span id="csucc-name">Valued Client</span>.</p>
+                    <a href="https://payfast.co.za" target="_blank" class="inline-block bg-zartec-black text-white px-4 py-2 rounded-lg text-xs font-bold">Complete R100 Fee via PayFast <i class="fa-solid fa-arrow-right ml-1"></i></a>
+                </div>
+            </div>
+
+            <!-- CUST SUB 2: BOBGO DELIVERY TRACKER -->
+            <div id="ctab-track" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 text-xs">
+                <h3 class="text-base font-bold text-zartec-black uppercase"><i class="fa-solid fa-truck-fast text-zartec-red mr-2"></i> Track Your Parcel (Bobgo Integration)[cite: 1]</h3>
+                <form onsubmit="handleBobgoTrack(event)" class="flex gap-2">
+                    <input type="text" id="track-id" required placeholder="Enter Order # or Waybill # (e.g. ZAR-10492)" class="flex-grow border rounded-lg p-2.5 font-mono font-bold">
+                    <button type="submit" class="bg-zartec-black text-white font-bold px-6 py-2.5 rounded-lg uppercase">Track</button>
+                </form>
+                <div id="track-result" class="hidden bg-slate-50 p-4 rounded-xl border text-xs">
+                    <p class="font-bold text-slate-900">Status: <span class="text-emerald-600">Out for Delivery via The Courier Guy</span></p>
+                </div>
+            </div>
+
+            <!-- CUST SUB 3: SERVICE CENTRE LOOKUP -->
+            <div id="ctab-repair" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 text-xs">
+                <h3 class="text-base font-bold text-zartec-black uppercase"><i class="fa-solid fa-wrench text-zartec-red mr-2"></i> Service Centre Job Lookup</h3>
+                <form onsubmit="handleRepairLookup(event)" class="flex gap-2">
+                    <input type="text" id="job-id" required placeholder="Enter Job Card # (e.g. JOB-8821)" class="flex-grow border rounded-lg p-2.5 font-mono font-bold">
+                    <button type="submit" class="bg-zartec-black text-white font-bold px-6 py-2.5 rounded-lg uppercase">Lookup</button>
+                </form>
+                <div id="job-result" class="hidden bg-slate-50 p-4 rounded-xl border text-xs">
+                    <p class="font-bold text-slate-900">Job Card JOB-8821: <span class="text-amber-800">In Testing & Final QC</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 1: SINGLE DEVICEFIT ASSESSOR -->
+        <div id="module-assessor" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 text-xs">
+                <div class="border-b pb-3 flex justify-between items-center">
+                    <h2 class="text-base font-bold text-zartec-black uppercase"><i class="fa-solid fa-sliders text-zartec-red mr-2"></i> Client Requirements Engine</h2>
+                    <button onclick="resetAssessor()" class="text-xs text-slate-400 hover:text-zartec-red">Reset</button>
+                </div>
+                <form id="assessor-form" class="space-y-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-0.5">Client Name / Opportunity Ref</label>
+                        <input type="text" id="ass-client" placeholder="e.g. Vhembe District Municipality" class="w-full border rounded-lg p-2 font-semibold">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-0.5">User Persona</label>
+                        <select id="ass-persona" class="w-full border rounded-lg p-2 font-semibold">
+                            <option value="all">Any Role</option>
+                            <option value="executive">Executive & Senior Manager</option>
+                            <option value="mobile">Road Warrior / Field Staff</option>
+                            <option value="power">Power Analyst / Specialist</option>
+                            <option value="creator">Creator / CAD Engineer</option>
+                            <option value="standard" selected>Standard Office / Admin Worker</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-0.5">Preferred Form Factor</label>
+                        <select id="ass-ff" class="w-full border rounded-lg p-2 font-semibold">
+                            <option value="all">Any Form Factor</option>
+                            <option value="laptop" selected>Commercial Laptop / Notebook</option>
+                            <option value="2in1">2-in-1 Touch Convertible</option>
+                            <option value="desktop">Desktop / Small Form Factor</option>
+                            <option value="workstation">Precision Workstation</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="font-bold text-slate-700 uppercase">Max Target Budget (ZAR Incl. VAT)</label>
+                            <span id="ass-budget-val" class="font-extrabold text-zartec-red text-sm">R 35,000</span>
+                        </div>
+                        <input type="range" id="ass-budget" min="8000" max="80000" step="2000" value="35000" class="w-full h-2 bg-slate-200 rounded-lg accent-zartec-red" oninput="updateBudgetVal(this.value)">
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl border">
+                        <label class="flex items-start space-x-2 cursor-pointer">
+                            <input type="checkbox" id="ass-bundle" checked class="mt-0.5 text-zartec-red rounded" onchange="runAssessor()">
+                            <span class="font-bold text-slate-900 text-[11px]">Include Ready-to-Work Bundle (+R1,850 Excl. VAT)[cite: 1]</span>
+                        </label>
+                    </div>
+                    <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-200">
+                        <label class="flex items-start space-x-2 cursor-pointer">
+                            <input type="checkbox" id="ass-hide-price" class="mt-0.5 text-zartec-red rounded" onchange="runAssessor()">
+                            <span class="font-bold text-amber-900 text-[11px]">Hide Prices in Output (Specs & Score Only)</span>
+                        </label>
+                    </div>
+                    <button type="button" onclick="runAssessor()" class="w-full bg-zartec-red hover:bg-zartec-darkred text-white font-bold py-3 rounded-xl shadow uppercase tracking-wider text-xs">
+                        Run DeviceFit Calculation
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-7 space-y-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <h3 id="report-client-title" class="text-base font-black text-zartec-black">Recommended Hardware Solutions</h3>
+                        <p class="text-xs text-slate-400">Matched against active distributor inventory</p>
+                    </div>
+                    <button onclick="window.print()" class="bg-slate-800 text-white font-bold px-3 py-1.5 rounded text-xs"><i class="fa-solid fa-file-pdf text-red-400 mr-1"></i> Print Proposal</button>
+                </div>
+                <div id="assessor-cards-container" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- MODULE 2: DIGITAL READINESS & CYBER HEALTH CHECK -->
+        <div id="module-cyber" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs">
+            <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <h2 class="text-base font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-shield-virus text-zartec-red mr-2"></i> 25-Point Cyber Health & Digital Readiness Assessment[cite: 1]</h2>
+                <form id="cyber-form" class="space-y-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Organization Name</label>
+                        <input type="text" id="cyber-client" placeholder="e.g. Limpopo Medical Supplies" class="w-full border rounded-lg p-2.5 font-semibold">
+                    </div>
+                    <div class="space-y-2 bg-slate-50 p-3 rounded-xl border">
+                        <span class="font-black text-zartec-red uppercase block">1. Device Age & Hardware Security</span>
+                        <label class="block font-semibold">1.1 What percentage of devices are over 4 years old or on Windows 10?[cite: 1]</label>
+                        <select id="cq1" class="w-full border rounded-lg p-2" onchange="runCyberAudit()">
+                            <option value="10">Under 10% (Modern Fleet)</option>
+                            <option value="5" selected>10% to 40% (Mixed Fleet)</option>
+                            <option value="0">Over 50% (High Failure Risk)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2 bg-slate-50 p-3 rounded-xl border">
+                        <span class="font-black text-zartec-red uppercase block">2. Microsoft 365 & Cloud Security</span>
+                        <label class="block font-semibold">2.1 Is Multi-Factor Authentication (MFA) enforced for ALL users?[cite: 1]</label>
+                        <select id="cq2" class="w-full border rounded-lg p-2" onchange="runCyberAudit()">
+                            <option value="10">Yes - Enforced for 100% of accounts</option>
+                            <option value="0" selected>No - Passwords only without MFA</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2 bg-slate-50 p-3 rounded-xl border">
+                        <span class="font-black text-zartec-red uppercase block">3. Backup Immutability & Air-Gap</span>
+                        <label class="block font-semibold">3.1 Are backups stored offsite with S3 Object Lock (3-2-1-1-0 Rule)?[cite: 1]</label>
+                        <select id="cq3" class="w-full border rounded-lg p-2" onchange="runCyberAudit()">
+                            <option value="10">Yes - Immutable Cloud Active</option>
+                            <option value="0" selected>No - Local USB / NAS Only</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="lg:col-span-5 space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border text-center space-y-3">
+                    <h3 class="font-bold text-slate-400 uppercase">Cyber Health Score</h3>
+                    <div class="inline-flex items-center justify-center w-28 h-28 rounded-full border-8 border-amber-400 bg-amber-50">
+                        <span id="cyber-score-val" class="text-3xl font-black text-amber-700">38%</span>
+                    </div>
+                    <div id="cyber-badge" class="inline-block bg-amber-100 text-amber-900 px-3 py-1 rounded-full font-bold">⚠️ High Downtime Risk</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h4 class="font-bold text-zartec-black uppercase border-b pb-1">Monetization Actions</h4>
+                    <button onclick="window.print()" class="w-full bg-zartec-red text-white font-bold py-2 rounded-lg">Export Branded Report (R499)[cite: 1]</button>
+                    <button onclick="sendWhatsApp('Cyber Audit')" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp Desk</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 3: BACKUP & DR PLANNER -->
+        <div id="module-dr" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs">
+            <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <h2 class="text-base font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-server text-zartec-red mr-2"></i> Veeam Backup & DR Planner[cite: 1]</h2>
+                <form id="dr-form" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase mb-0.5">Organization</label>
+                            <input type="text" id="dr-client" placeholder="e.g. Vhembe Logistics" class="w-full border rounded-lg p-2 font-semibold">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-700 uppercase mb-0.5">Total Workloads / VMs</label>
+                            <input type="number" id="dr-workloads" value="15" min="1" class="w-full border rounded-lg p-2 font-bold" onchange="runDRAudit()">
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2">
+                        <span class="font-black text-zartec-red uppercase block">1. RTO Target</span>
+                        <select id="dr-rto" class="w-full border rounded-lg p-2" onchange="runDRAudit()">
+                            <option value="10">Under 1 Hour (Instant Recovery)</option>
+                            <option value="7" selected>1 to 4 Hours</option>
+                            <option value="2">Greater than 24 Hours</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <div class="lg:col-span-5 space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border text-center space-y-3">
+                    <h3 class="font-bold text-slate-400 uppercase">DR Resilience Rating</h3>
+                    <div class="inline-flex items-center justify-center w-28 h-28 rounded-full border-8 border-amber-400 bg-amber-50">
+                        <span id="dr-score-val" class="text-3xl font-black text-amber-700">42%</span>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-2">
+                    <h4 class="font-bold uppercase border-b pb-1">Veeam Automated Quote</h4>
+                    <div id="dr-quote-list" class="space-y-1"></div>
+                    <div class="flex justify-between border-t pt-2 font-bold"><span>Monthly Retainer:</span><span id="dr-total-price" class="text-zartec-red">R 2,350.00</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 4: FLEET REFRESH PLANNER -->
+        <div id="module-fleet" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8 text-xs">
+            <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border space-y-4">
+                <h2 class="text-base font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-chart-line text-zartec-red mr-2"></i> Fleet Refresh & Budget Planner[cite: 1]</h2>
+                <form id="fleet-form" class="space-y-3">
+                    <div>
+                        <label class="block font-bold uppercase mb-0.5">Client Name</label>
+                        <input type="text" id="fleet-client" placeholder="e.g. Vhembe District Municipality" class="w-full border rounded-lg p-2 font-semibold">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border">
+                        <div><label class="block font-bold mb-0.5">Admin Staff</label><input type="number" id="fc-admin" value="10" min="0" class="w-full border rounded p-1.5 font-bold" onchange="runFleetPlan()"></div>
+                        <div><label class="block font-bold mb-0.5">Field Staff</label><input type="number" id="fc-mobile" value="5" min="0" class="w-full border rounded p-1.5 font-bold" onchange="runFleetPlan()"></div>
+                        <div><label class="block font-bold mb-0.5">Power Analysts</label><input type="number" id="fc-power" value="3" min="0" class="w-full border rounded p-1.5 font-bold" onchange="runFleetPlan()"></div>
+                        <div><label class="block font-bold mb-0.5">Executives</label><input type="number" id="fc-exec" value="2" min="0" class="w-full border rounded p-1.5 font-bold" onchange="runFleetPlan()"></div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="lg:col-span-7 space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border grid grid-cols-3 gap-2 text-center">
+                    <div><span class="text-slate-400 block text-[10px] font-bold uppercase">Active Fleet</span><strong id="fleet-stat-units" class="text-xl font-black">20 Units</strong></div>
+                    <div><span class="text-slate-400 block text-[10px] font-bold uppercase">Year 1 CAPEX</span><strong id="fleet-stat-y1" class="text-xl font-black text-zartec-red">R 460,600</strong></div>
+                    <div><span class="text-slate-400 block text-[10px] font-bold uppercase">3-Yr Forecast</span><strong id="fleet-stat-3yr" class="text-xl font-black">R 542,350</strong></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="font-bold text-slate-900 uppercase">3-Year CAPEX Replacement Roadmap[cite: 1]</h3>
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead><tr class="bg-slate-900 text-white uppercase text-[10px]"><th class="p-2">Timeline</th><th class="p-2">Focus</th><th class="p-2 text-center">Units</th><th class="p-2 text-right">CAPEX</th></tr></thead>
+                        <tbody id="fleet-schedule-tbody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 5: IT ASSET & WARRANTY VAULT -->
+        <div id="module-vault" class="hidden space-y-6 text-xs">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-box-archive text-zartec-red mr-2"></i> Register Asset[cite: 1]</h3>
+                    <form onsubmit="addVaultAsset(event)" class="space-y-2">
+                        <input type="text" id="va-user" required placeholder="User / Dept" class="w-full border rounded p-2">
+                        <input type="text" id="va-model" required placeholder="Model Description" class="w-full border rounded p-2">
+                        <input type="text" id="va-serial" required placeholder="Serial Number" class="w-full border rounded p-2 font-mono">
+                        <input type="date" id="va-wdate" required class="w-full border rounded p-2">
+                        <button type="submit" class="w-full bg-zartec-red text-white font-bold py-2 rounded-xl">Add to Vault</button>
+                    </form>
+                </div>
+                <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border overflow-hidden">
+                    <div class="p-4 border-b flex justify-between items-center"><h3 class="font-bold text-zartec-black uppercase">IT Asset & Warranty Register (CISA CPG 2.0)[cite: 1]</h3></div>
+                    <table class="w-full text-left text-xs">
+                        <thead><tr class="bg-slate-900 text-white uppercase text-[10px]"><th class="p-3">User</th><th class="p-3">Model & Serial</th><th class="p-3">Expiry</th><th class="p-3 text-right">Action</th></tr></thead>
+                        <tbody id="vault-tbody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 6: TRUST MONITOR -->
+        <div id="module-monitor" class="hidden space-y-6 text-xs">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-globe text-zartec-red mr-2"></i> Monitor Domain[cite: 1]</h3>
+                    <form onsubmit="addDomain(event)" class="space-y-2">
+                        <input type="text" id="dom-name" required placeholder="e.g. zartec.co.za" class="w-full border rounded p-2">
+                        <button type="submit" class="w-full bg-zartec-red text-white font-bold py-2 rounded-xl">Register Domain</button>
+                    </form>
+                </div>
+                <div class="lg:col-span-8 bg-white rounded-2xl shadow-sm border overflow-hidden">
+                    <div class="p-4 border-b"><h3 class="font-bold text-zartec-black uppercase">Website & Email Authentication Status[cite: 1]</h3></div>
+                    <table class="w-full text-left text-xs">
+                        <thead><tr class="bg-slate-900 text-white uppercase text-[10px]"><th class="p-3">Domain</th><th class="p-3">Uptime & SSL</th><th class="p-3">DMARC Policy</th><th class="p-3 text-right">Action</th></tr></thead>
+                        <tbody id="monitor-tbody" class="divide-y"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODULE 7: BACKEND ADMINISTRATOR MANAGER -->
+        <div id="module-admin" class="hidden space-y-6 text-xs">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div class="md:col-span-5 bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-calculator text-zartec-red mr-2"></i> Margin & Markup Rules</h3>
+                    <label class="block font-bold uppercase">Markup Percentage (%)</label>
+                    <input type="number" id="input-markup-pct" value="15" class="w-full border rounded p-2 font-bold" onchange="updatePricingRules()">
+                </div>
+                <div class="md:col-span-7 bg-white p-6 rounded-2xl shadow-sm border space-y-3">
+                    <h3 class="font-bold text-zartec-black uppercase border-b pb-2"><i class="fa-solid fa-file-import text-zartec-red mr-2"></i> Upload Distributor Pricelist (Excel / CSV)[cite: 1]</h3>
+                    <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" class="border p-2 rounded w-full" onchange="parsePricelist(event)">
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div class="p-4 border-b flex justify-between items-center"><h3 class="font-bold text-zartec-black uppercase">Active Catalog Database</h3><button onclick="clearCatalog()" class="text-red-600 font-bold">Clear Catalog</button></div>
+                <table class="w-full text-left text-xs"><thead class="bg-slate-900 text-white uppercase text-[10px]"><tr class="p-3"><th class="p-3">Distributor</th><th class="p-3">SKU</th><th class="p-3">Description</th><th class="p-3">Cost Excl</th><th class="p-3">Retail Incl</th><th class="p-3 text-right">Action</th></tr></thead><tbody id="admin-catalog-tbody" class="divide-y"></tbody></table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t py-4 mt-auto no-print">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between text-xs text-slate-500">
+            <span><strong>Zartec Solutions Central Console</strong> &bull; www.zartec.co.za[cite: 1]</span>
+            <span>Tel: 087 265 4829 | WhatsApp: 077 255 9155 | Email: information@zartec.co.za[cite: 1]</span>
+        </div>
+    </footer>
+
+    <!-- PRINT TEMPLATE -->
+    <div class="print-only p-8 max-w-4xl mx-auto bg-white text-xs">
+        <div class="flex justify-between border-b-2 border-zartec-red pb-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-black text-black uppercase">ZARTEC <span class="text-zartec-red">SOLUTIONS</span></h1>
+                <p class="text-gray-500">Tel: 087 265 4829 • WhatsApp: 077 255 9155 • information@zartec.co.za[cite: 1]</p>
+            </div>
+            <div class="text-right font-bold"><p>FORMAL REPORT / PROPOSAL</p><p>Ref: ZAR-2026-CONSOLE</p></div>
+        </div>
+        <div id="print-content" class="space-y-4"></div>
+    </div>
+
+    <!-- JAVASCRIPT CONTROLLER -->
+    <script>
+        let currentUser = null;
+        let activeMarkupPct = 15;
+        let activeVatRate = 15;
+
+        const AUTH_USERS = {
+            'zartec_admin': { pass: 'Zartec@2026', role: 'admin', name: 'zartec_admin' },
+            'zartec_sales': { pass: 'Sales@2026', role: 'sales', name: 'zartec_sales' }
+        };
+
+        let deviceCatalog = [
+            { id: "SKU-001", distributor: "Tarsus Distribution", line: "Latitude", model: "Dell Latitude 3540 Core i5", sku: "N004L354015EMEA_VP", cpu: "Intel Core i5-1335U", ram: 8, storage: "512GB NVMe SSD", display: '15.6" FHD', formFactor: "laptop", persona: ["standard"], costPrice: 11203.78 },
+            { id: "SKU-002", distributor: "Tarsus Distribution", line: "Latitude", model: "Dell Latitude 5440 Core i5 Pro", sku: "N012L544014EMEA_VP", cpu: "Intel Core i5-1345P", ram: 16, storage: "512GB NVMe SSD", display: '14.0" FHD', formFactor: "laptop", persona: ["standard", "mobile"], costPrice: 16200.00 },
+            { id: "SKU-003", distributor: "Esquire Technologies", line: "Latitude", model: "Dell Latitude 7440 Core i7 Ultralight", sku: "N008L744014EMEA_VP", cpu: "Intel Core i7-1365U", ram: 16, storage: "1TB NVMe SSD", display: '14.0" FHD+ 250nit', formFactor: "laptop", persona: ["executive", "mobile"], costPrice: 26500.00 }
+        ];
+
+        let vaultAssets = [
+            { id: "A-1", user: "Khathu Thovheyi (Executive)", model: "Dell Latitude 9440 2-in-1", serial: "SN-99201", warrantyExpiry: "2026-01-15" },
+            { id: "A-2", user: "Tendani Musina (Finance)", model: "Dell Latitude 3540", serial: "SN-33812", warrantyExpiry: "2025-05-10" }
+        ];
+
+        let monitoredDomains = [
+            { domain: "zartec.co.za", uptime: "100%", ssl: "Valid (240d)", dmarc: "p=reject" },
+            { domain: "vhembelogistics.co.za", uptime: "99.9%", ssl: "Valid (45d)", dmarc: "p=none" }
+        ];
+
+        function switchModule(mod) {
+            if (mod === 'admin' && currentUser?.role !== 'admin') {
+                openLoginModal();
+                return;
+            }
+            ['customer', 'assessor', 'cyber', 'dr', 'fleet', 'vault', 'monitor', 'admin'].forEach(m => {
+                const el = document.getElementById(`module-${m}`);
+                const btn = document.getElementById(`nav-${m}-btn`);
+                if (el) el.classList.add('hidden');
+                if (btn) btn.className = "bg-zartec-charcoal hover:bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1 font-bold";
+            });
+
+            const activeEl = document.getElementById(`module-${mod}`);
+            const activeBtn = document.getElementById(`nav-${mod}-btn`);
+            if (activeEl) activeEl.classList.remove('hidden');
+            if (activeBtn) activeBtn.className = "bg-zartec-red text-white px-3 py-1.5 rounded-lg transition flex items-center gap-1 font-bold";
+        }
+
+        function openLoginModal() { document.getElementById('login-modal').classList.remove('hidden'); document.getElementById('login-modal').classList.add('flex'); }
+        function closeLoginModal() { document.getElementById('login-modal').classList.add('hidden'); document.getElementById('login-modal').classList.remove('flex'); }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+
+            if (AUTH_USERS[u] && AUTH_USERS[u].pass === p) {
+                currentUser = AUTH_USERS[u];
+                closeLoginModal();
+                document.getElementById('role-badge').innerText = `Logged In: ${currentUser.name}`;
+                document.getElementById('auth-state-btn').innerHTML = `<i class="fa-solid fa-power-off text-red-400"></i> Logout`;
+                document.getElementById('auth-state-btn').onclick = handleLogout;
+                switchModule('assessor');
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            document.getElementById('role-badge').innerText = `Customer Self-Service Mode`;
+            document.getElementById('auth-state-btn').innerHTML = `<i class="fa-solid fa-right-to-bracket text-zartec-red"></i> Staff Login`;
+            document.getElementById('auth-state-btn').onclick = openLoginModal;
+            switchModule('customer');
+        }
+
+        function calculateRetail(cost) {
+            return Math.ceil((cost * (1 + (activeMarkupPct / 100))) * (1 + (activeVatRate / 100)));
+        }
+
+        function runAssessor() {
+            const client = document.getElementById('ass-client').value || 'Valued Client';
+            const persona = document.getElementById('ass-persona').value;
+            const ff = document.getElementById('ass-ff').value;
+            const budget = parseInt(document.getElementById('ass-budget').value);
+            const bundle = document.getElementById('ass-bundle').checked;
+            const hidePrice = document.getElementById('ass-hide-price').checked;
+            const bundleFee = bundle ? 2127.50 : 0;
+
+            document.getElementById('report-client-title').innerText = `Solutions for: ${client}`;
+
+            let scored = deviceCatalog.map(item => {
+                let score = 100;
+                const price = calculateRetail(item.costPrice) + bundleFee;
+                if (price > budget) score -= 45;
+                if (ff !== 'all' && item.formFactor !== ff) score -= 25;
+                if (persona !== 'all' && !item.persona.includes(persona)) score -= 20;
+                return { ...item, fitScore: Math.max(15, score), totalPrice: price };
+            });
+
+            scored.sort((a, b) => b.fitScore - a.fitScore || a.totalPrice - b.totalPrice);
+
+            const container = document.getElementById('assessor-cards-container');
+            container.innerHTML = '';
+            scored.forEach((dev, idx) => {
+                const priceDisp = hidePrice ? `<span class="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-bold">Quoted Separately</span>` : `<div class="text-lg font-black">R ${dev.totalPrice.toLocaleString()}</div>`;
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border ${idx === 0 ? 'border-2 border-zartec-red' : 'border-slate-200'}">
+                        <div class="flex justify-between items-start">
+                            <div><h4 class="font-bold text-slate-900">${dev.model}</h4><p class="text-xs text-slate-400 font-mono">SKU: ${dev.sku}</p></div>
+                            <div class="text-right"><span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">${dev.fitScore}% Match</span>${priceDisp}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateBudgetVal(val) { document.getElementById('ass-budget-val').innerText = `R ${parseInt(val).toLocaleString()}`; }
+        function sendWhatsApp(type) { window.open(`https://wa.me/27772559155?text=${encodeURIComponent(`Hi Zartec! I am requesting information regarding ${type}.`)}`, '_blank'); }
+
+        function switchCustSub(sub) {
+            ['fit', 'track', 'repair'].forEach(s => {
+                document.getElementById(`ctab-${s}`).classList.add('hidden');
+            });
+            document.getElementById(`ctab-${sub}`).classList.remove('hidden');
+        }
+
+        function submitCustAssessment(e) { e.preventDefault(); document.getElementById('csucc-name').innerText = document.getElementById('cname').value; document.getElementById('cust-success-box').classList.remove('hidden'); }
+        function handleBobgoTrack(e) { e.preventDefault(); document.getElementById('track-result').classList.remove('hidden'); }
+        function handleRepairLookup(e) { e.preventDefault(); document.getElementById('job-result').classList.remove('hidden'); }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            runAssessor();
+        });
+    </script>
+</body>
+</html>
